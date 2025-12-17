@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>Wordle Remix 最终修复版</title>
+    <title>Wordle Remix - Universal Fix</title>
     <style>
         :root { --color-correct: #6aaa64; --color-present: #c9b458; --color-absent: #3a3a3c; --bg: #121213; }
         body { font-family: sans-serif; background: var(--bg); color: white; text-align: center; margin: 0; padding: 10px; overflow: hidden; touch-action: manipulation; }
@@ -25,19 +25,19 @@
         
         #message { height: 30px; margin: 10px; font-weight: bold; color: #f1c40f; }
         
-        /* 移动端专用辅助按钮 */
+        /* Mobile Help Buttons */
         .mobile-controls { display: none; margin-top: 15px; gap: 10px; justify-content: center; }
         @media (max-width: 600px) { .mobile-controls { display: flex; } }
-        .m-btn { width: 80px; padding: 10px; background: #555; font-size: 0.9rem; }
+        .m-btn { width: 100px; padding: 10px; background: #555; font-size: 0.9rem; }
     </style>
 </head>
 <body>
 
     <div id="setup">
         <div class="setup-box">
-            <h2>Wordle 生成器</h2>
-            <input type="text" id="wInput" placeholder="输入密钥单词" maxlength="12">
-            <button onclick="makeLink()">生成挑战链接</button>
+            <h2>Wordle Builder</h2>
+            <input type="text" id="wInput" placeholder="SECRET WORD" maxlength="12">
+            <button onclick="makeLink()">Generate Link</button>
             <div id="out"></div>
         </div>
     </div>
@@ -46,11 +46,11 @@
         <div id="grid"></div>
         <div id="message"></div>
         <div class="mobile-controls">
-            <button class="m-btn" onclick="submitGuess()">确认 (ENTER)</button>
-            <button class="m-btn" onclick="delLetter()">退格 (DEL)</button>
+            <button class="m-btn" onclick="submitGuess()">ENTER</button>
+            <button class="m-btn" onclick="delLetter()">DELETE</button>
         </div>
-        <button id="shareBtn" style="display:none; background:#2f7ed8" onclick="doShare()">分享战绩 🟩</button>
-        <button onclick="window.location.href=window.location.pathname" style="background:#444; width:auto; padding:10px 20px;">创建新单词</button>
+        <button id="shareBtn" style="display:none; background:#2f7ed8" onclick="doShare()">SHARE RESULTS 🟩</button>
+        <button onclick="window.location.href=window.location.pathname" style="background:#444; width:auto; padding:10px 20px;">CREATE NEW</button>
     </div>
 
 <script>
@@ -70,16 +70,16 @@
 
     function makeLink() {
         const val = document.getElementById('wInput').value.trim();
-        if (val.length < 3) { alert("单词太短了！"); return; }
+        if (val.length < 3) { alert("Word too short!"); return; }
         const encrypted = btoa(unescape(encodeURIComponent(val)));
         const link = window.location.origin + window.location.pathname + "?code=" + encrypted;
-        document.getElementById('out').innerHTML = `<textarea id="linkBox" readonly style="margin-top:10px; height:60px;">${link}</textarea><button onclick="copyToClipboard()" id="cBtn" style="background:#555">复制链接</button>`;
+        document.getElementById('out').innerHTML = `<textarea id="linkBox" readonly style="margin-top:10px; height:60px; color:white; background:black;">${link}</textarea><button onclick="copyToClipboard()" id="cBtn" style="background:#555">Copy Link</button>`;
     }
 
     async function copyToClipboard() {
         const box = document.getElementById('linkBox');
-        try { await navigator.clipboard.writeText(box.value); alert("复制成功！"); } 
-        catch(e) { box.select(); document.execCommand('copy'); alert("复制成功！"); }
+        try { await navigator.clipboard.writeText(box.value); alert("Copied!"); } 
+        catch(e) { box.select(); document.execCommand('copy'); alert("Copied!"); }
     }
 
     function initGrid() {
@@ -97,25 +97,24 @@
         mInput.autocapitalize = 'none'; mInput.autocomplete = 'off';
         document.body.appendChild(mInput);
 
-        // 点击屏幕唤起键盘
         document.body.onclick = (e) => { 
             if(!gameOver && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT') mInput.focus(); 
         };
         
-        // 手机输入逻辑：只处理字母，不重复
+        // Handles mobile input only
         mInput.oninput = (e) => {
             const char = e.target.value.slice(-1);
             if (/^[a-zA-Z]$/.test(char)) addLetter(char.toUpperCase());
             e.target.value = ""; 
         };
 
-        // 键盘逻辑：处理 Laptop 字母 + 全平台特殊键
+        // Handles physical keyboard + special keys
         window.onkeydown = (e) => {
             if (gameOver) return;
             if (e.key === 'Enter') { e.preventDefault(); submitGuess(); }
             else if (e.key === 'Backspace') { e.preventDefault(); delLetter(); }
             else if (/^[a-zA-Z]$/.test(e.key)) {
-                // 如果当前焦点不在隐藏输入框，说明是笔记本物理键盘，才处理
+                // If focus is NOT in the hidden input, it's a laptop keyboard press
                 if (document.activeElement !== mInput) {
                     addLetter(e.key.toUpperCase());
                 }
@@ -140,10 +139,9 @@
     async function submitGuess() {
         if (curGuess.length !== target.length) return;
         
-        // 字典检查
         if (curGuess !== target) {
             const r = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${curGuess}`).catch(()=>{});
-            if (r && !r.ok) { document.getElementById('message').innerText = "单词不在列表内"; return; }
+            if (r && !r.ok) { document.getElementById('message').innerText = "NOT IN WORD LIST"; return; }
         }
 
         document.getElementById('message').innerText = "";
@@ -163,8 +161,8 @@
                 rowEmo += states[i] === 'correct' ? "🟩" : (states[i] === 'present' ? "🟨" : "⬛");
                 if (i === target.length - 1) {
                     emojis.push(rowEmo);
-                    if (curGuess === target) { document.getElementById('message').innerText = "太棒了！"; finish(); }
-                    else if (curRow === maxAllowed - 1) { document.getElementById('message').innerText = "答案是: " + target; finish(); }
+                    if (curGuess === target) { document.getElementById('message').innerText = "GENIUS!"; finish(); }
+                    else if (curRow === maxAllowed - 1) { document.getElementById('message').innerText = "WORD: " + target; finish(); }
                     else { curRow++; curGuess = ""; }
                 }
             }, i * 150);
@@ -174,7 +172,7 @@
     function finish() { gameOver = true; document.getElementById('shareBtn').style.display = 'block'; }
     function doShare() {
         const text = `Wordle Remix ${curRow + 1}/${maxAllowed}\n\n${emojis.join('\n')}`;
-        navigator.clipboard.writeText(text); alert("战绩已复制！");
+        navigator.clipboard.writeText(text); alert("Copied results!");
     }
 </script>
 </body>
