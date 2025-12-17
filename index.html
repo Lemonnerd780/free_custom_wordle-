@@ -3,23 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>Wordle Creator Pro</title>
+    <title>Wordle Remix Pro</title>
     <style>
-        :root { --color-correct: #6aaa64; --color-present: #c9b458; --color-absent: #3a3a3c; --bg: #121213; }
-        body { font-family: sans-serif; background: var(--bg); color: white; text-align: center; margin: 0; padding: 10px; }
+        :root { 
+            --color-correct: #6aaa64; 
+            --color-present: #c9b458; 
+            --color-absent: #3a3a3c; 
+            --bg: #121213; 
+        }
+        body { font-family: sans-serif; background: var(--bg); color: white; text-align: center; margin: 0; padding: 10px; overflow-x: hidden; }
+        
+        /* Setup Box */
         .setup-box { background: #1e1e1f; padding: 20px; border-radius: 10px; display: inline-block; margin-top: 20px; width: 90%; max-width: 400px; border: 1px solid #333; }
         input, textarea { padding: 15px; font-size: 1rem; background: #000; border: 1px solid #444; color: white; border-radius: 5px; width: 100%; box-sizing: border-box; }
         button { padding: 15px; background: var(--color-correct); color: white; border: none; font-weight: bold; border-radius: 5px; cursor: pointer; margin: 10px 0; width: 100%; -webkit-appearance: none; }
+        
+        /* Game Grid */
         #grid { display: grid; gap: 5px; justify-content: center; margin-top: 10px; }
-        .tile { width: 45px; height: 45px; perspective: 1000px; }
+        .tile { width: 48px; height: 48px; perspective: 1000px; }
         .tile-inner { position: relative; width: 100%; height: 100%; transition: transform 0.6s; transform-style: preserve-3d; }
         .flipped .tile-inner { transform: rotateX(180deg); }
-        .tile-front, .tile-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: bold; text-transform: uppercase; border: 2px solid #3a3a3c; box-sizing: border-box; }
-        .tile-back { transform: rotateX(180deg); border: none; }
+        
+        .tile-front, .tile-back { 
+            position: absolute; width: 100%; height: 100%; backface-visibility: hidden; 
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 1.6rem; font-weight: bold; text-transform: uppercase; 
+            border: 2px solid #3a3a3c; box-sizing: border-box; 
+        }
+        .tile-back { transform: rotateX(180deg); border: none; color: white; }
+        
+        /* Animations & Colors */
+        .pop { animation: pop 0.1s ease-in-out; }
+        @keyframes pop { 50% { transform: scale(1.1); } }
+        .shake { animation: shake 0.5s; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-5px); } 40%, 80% { transform: translateX(5px); } }
+
         .correct .tile-back { background: var(--color-correct); }
         .present .tile-back { background: var(--color-present); }
         .absent .tile-back { background: var(--color-absent); }
-        #message { height: 30px; margin: 10px; font-weight: bold; color: #f1c40f; }
+        
+        #message { height: 30px; margin: 15px; font-weight: bold; color: #f1c40f; font-size: 1.2rem; }
     </style>
 </head>
 <body>
@@ -36,7 +59,7 @@
     <div id="game" style="display:none;">
         <div id="grid"></div>
         <div id="message"></div>
-        <button id="share" style="display:none; background:#2f7ed8" onclick="doShare()">SHARE RESULTS</button>
+        <button id="shareBtn" style="display:none; background:#2f7ed8" onclick="doShare()">SHARE RESULTS 🟩</button>
         <button onclick="window.location.href=window.location.pathname" style="background:#444">CREATE NEW</button>
     </div>
 
@@ -45,7 +68,7 @@
     const code = params.get('code');
     let target = "", curRow = 0, curGuess = "", gameOver = false, emojis = [], maxAllowed = 6;
 
-    // 1. STARTUP
+    // 1. STARTUP LOGIC
     if (code) {
         document.getElementById('setup').style.display = 'none';
         document.getElementById('game').style.display = 'block';
@@ -53,47 +76,38 @@
             target = decodeURIComponent(escape(atob(code))).toUpperCase();
             maxAllowed = target.length + 1;
             initGrid();
-        } catch(e) { alert("Error loading link. Starting fresh."); window.location.href = window.location.pathname; }
+        } catch(e) { window.location.href = window.location.pathname; }
     }
 
-    // 2. LINK GENERATION (MOBILE FRIENDLY)
+    // 2. LINK GENERATION
     function makeLink() {
-        try {
-            const val = document.getElementById('wInput').value.trim();
-            if (val.length < 3) { alert("Word too short!"); return; }
-            
-            // Safe encoding for mobile
-            const encrypted = btoa(unescape(encodeURIComponent(val)));
-            const link = window.location.origin + window.location.pathname + "?code=" + encrypted;
-            
-            document.getElementById('out').innerHTML = `
-                <p>Challenge Ready! Copy link:</p>
-                <textarea id="linkBox" readonly style="height:80px; font-size:0.8rem;">${link}</textarea>
-                <button onclick="copyToClipboard()" id="cBtn" style="background:#555">Copy Link</button>
-            `;
-        } catch(err) {
-            alert("Generation failed: " + err.message);
-        }
+        const val = document.getElementById('wInput').value.trim();
+        if (val.length < 3) { alert("Word too short!"); return; }
+        const encrypted = btoa(unescape(encodeURIComponent(val)));
+        const link = window.location.origin + window.location.pathname + "?code=" + encrypted;
+        document.getElementById('out').innerHTML = `
+            <p>Challenge Ready!</p>
+            <textarea id="linkBox" readonly style="height:60px; font-size:0.8rem; background:#000; color:#fff;">${link}</textarea>
+            <button onclick="copyToClipboard()" id="cBtn" style="background:#555">Copy Link</button>
+        `;
     }
 
     async function copyToClipboard() {
         const box = document.getElementById('linkBox');
-        const btn = document.getElementById('cBtn');
         try {
             await navigator.clipboard.writeText(box.value);
-            btn.innerText = "COPIED!";
-            btn.style.background = "#6aaa64";
+            alert("Copied!");
         } catch(e) {
             box.select();
             document.execCommand('copy');
-            btn.innerText = "COPIED!";
+            alert("Copied!");
         }
     }
 
-    // 3. GAME LOGIC
+    // 3. GAME ENGINE
     function initGrid() {
         const g = document.getElementById('grid');
-        g.style.gridTemplateColumns = `repeat(${target.length}, 45px)`;
+        g.style.gridTemplateColumns = `repeat(${target.length}, 48px)`;
         for (let i = 0; i < maxAllowed * target.length; i++) {
             const t = document.createElement('div');
             t.className = 'tile'; t.id = 't-' + i;
@@ -101,31 +115,39 @@
             g.appendChild(t);
         }
 
-        // Invisible input for Mobile Keyboard
-        const input = document.createElement('input');
-        input.type = 'text'; input.style.position = 'fixed'; input.style.top = '-100px';
-        input.autocapitalize = 'none'; input.autocomplete = 'off';
-        document.body.appendChild(input);
+        // Hidden input to trigger Mobile Keyboard
+        const mobileInput = document.createElement('input');
+        mobileInput.type = 'text'; 
+        mobileInput.style.position = 'fixed'; 
+        mobileInput.style.top = '-100px';
+        mobileInput.autocapitalize = 'none';
+        document.body.appendChild(mobileInput);
 
-        document.body.onclick = () => { if(!gameOver) input.focus(); };
+        document.body.onclick = () => { if(!gameOver) mobileInput.focus(); };
         
-        input.oninput = (e) => {
+        // Mobile listener
+        mobileInput.oninput = (e) => {
             const char = e.target.value.slice(-1);
             if (/^[a-zA-Z]$/.test(char)) addLetter(char.toUpperCase());
-            e.target.value = "";
+            e.target.value = ""; 
         };
 
+        // Laptop listener (Modified to prevent double-typing)
         window.onkeydown = (e) => {
             if (gameOver) return;
             if (e.key === 'Enter') submitGuess();
-            if (e.key === 'Backspace') delLetter();
-            if (/^[a-zA-Z]$/.test(e.key)) addLetter(e.key.toUpperCase());
+            else if (e.key === 'Backspace') delLetter();
+            else if (/^[a-zA-Z]$/.test(e.key) && e.target.tagName !== 'INPUT') {
+                addLetter(e.key.toUpperCase());
+            }
         };
     }
 
     function addLetter(l) {
         if (curGuess.length < target.length) {
-            document.querySelector(`#t-${curRow * target.length + curGuess.length} .tile-front`).innerText = l;
+            const tile = document.getElementById(`t-${curRow * target.length + curGuess.length}`);
+            tile.querySelector('.tile-front').innerText = l;
+            tile.classList.add('pop');
             curGuess += l;
         }
     }
@@ -133,7 +155,9 @@
     function delLetter() {
         if (curGuess.length > 0) {
             curGuess = curGuess.slice(0, -1);
-            document.querySelector(`#t-${curRow * target.length + curGuess.length} .tile-front`).innerText = "";
+            const tile = document.getElementById(`t-${curRow * target.length + curGuess.length}`);
+            tile.querySelector('.tile-front').innerText = "";
+            tile.classList.remove('pop');
         }
     }
 
@@ -144,7 +168,11 @@
         if (curGuess !== target) {
             try {
                 const r = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${curGuess}`);
-                if (!r.ok) { document.getElementById('message').innerText = "NOT IN WORD LIST"; return; }
+                if (!r.ok) { 
+                    document.getElementById('message').innerText = "NOT IN WORD LIST"; 
+                    shakeRow();
+                    return; 
+                }
             } catch(e) {}
         }
 
@@ -153,7 +181,9 @@
         const counts = {};
         target.split('').forEach(l => counts[l] = (counts[l] || 0) + 1);
 
+        // Logic Pass 1: Greens
         curGuess.split('').forEach((l, i) => { if (l === target[i]) { states[i] = 'correct'; counts[l]--; } });
+        // Logic Pass 2: Yellows
         curGuess.split('').forEach((l, i) => { if (states[i] !== 'correct' && counts[l] > 0) { states[i] = 'present'; counts[l]--; } });
 
         let rowEmo = "";
@@ -161,22 +191,33 @@
             const t = document.getElementById('t-' + (curRow * target.length + i));
             t.querySelector('.tile-back').innerText = curGuess[i];
             setTimeout(() => {
-                t.classList.add(states[i]); t.classList.add('flipped');
+                t.classList.add(states[i]); 
+                t.classList.add('flipped');
                 rowEmo += states[i] === 'correct' ? "🟩" : (states[i] === 'present' ? "🟨" : "⬛");
+                
                 if (i === target.length - 1) {
                     emojis.push(rowEmo);
                     if (curGuess === target) { document.getElementById('message').innerText = "GENIUS!"; endGame(); }
-                    else if (curRow === maxAllowed - 1) { document.getElementById('message').innerText = target; endGame(); }
+                    else if (curRow === maxAllowed - 1) { document.getElementById('message').innerText = "WORD: " + target; endGame(); }
                     else { curRow++; curGuess = ""; }
                 }
             }, i * 150);
         }
     }
 
-    function endGame() { gameOver = true; document.getElementById('share').style.display = 'block'; }
+    function shakeRow() {
+        for (let i = 0; i < target.length; i++) {
+            const t = document.getElementById('t-' + (curRow * target.length + i));
+            t.classList.add('shake');
+            setTimeout(() => t.classList.remove('shake'), 500);
+        }
+    }
+
+    function endGame() { gameOver = true; document.getElementById('shareBtn').style.display = 'block'; }
+    
     function doShare() {
-        const text = `Wordle Remix ${curRow + 1}/${maxAllowed}\n\n${emojis.join('\n')}`;
-        navigator.clipboard.writeText(text); alert("Copied results!");
+        const text = `Custom Wordle ${curRow + 1}/${maxAllowed}\n\n${emojis.join('\n')}`;
+        navigator.clipboard.writeText(text); alert("Results copied!");
     }
 </script>
 </body>
