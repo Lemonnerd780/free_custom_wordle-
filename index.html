@@ -110,7 +110,13 @@
             t.innerHTML = `<div class="tile-inner"><div class="tile-front"></div><div class="tile-back"></div></div>`;
             g.appendChild(t);
         }
-        window.onkeydown = (e) => {
+        window.addEventListener('keydown', (e) => {
+    const key = e.key;
+    if (gameOver) return;
+    if (key === 'Enter') submit();
+    else if (key === 'Backspace') del();
+    else if (/^[a-zA-Z]$/.test(key)) add(key.toUpperCase());
+});
             if (gameOver) return;
             if (e.key === 'Enter') submit();
             else if (e.key === 'Backspace') del();
@@ -226,4 +232,5 @@
     }
 </script>
 </body>
+
 </html>
