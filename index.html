@@ -93,13 +93,49 @@
     }
 
     function makeLink() {
-        const val = document.getElementById('wInput').value.trim();
-        if (val.length < 3) { alert("Word too short!"); return; }
-        const link = window.location.origin + window.location.pathname + "?code=" + btoa(val);
-        document.getElementById('out').innerHTML = `<p>Copy this link:</p><input value="${link}" id="cp" readonly style="width:100%;"><button onclick="copyIt()">Copy</button>`;
+    const val = document.getElementById('wInput').value.trim();
+    if (val.length < 3) {
+        alert("Please enter at least 3 letters.");
+        return;
     }
 
-    function copyIt() { document.getElementById('cp').select(); document.execCommand('copy'); alert("Link Copied!"); }
+    // This ensures we get the clean URL without old codes attached
+    const baseUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+    const finalUrl = baseUrl + "?code=" + btoa(val);
+    
+    const outputDiv = document.getElementById('out');
+    outputDiv.innerHTML = `
+        <p style="color: #6aaa64; font-weight: bold;">Challenge Created!</p>
+        <textarea id="cp" readonly style="width:100%; background:#000; color:#fff; border:1px solid #444; padding:5px; font-size:0.8rem; height:50px;">${finalUrl}</textarea>
+        <button onclick="copyIt()" id="copyBtn" style="background:#555; width:100%;">Copy to Clipboard</button>
+    `;
+}
+
+async function copyIt() {
+    const copyText = document.getElementById("cp");
+    const btn = document.getElementById("copyBtn");
+
+    // Try modern Clipboard API first (Best for Phone)
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+            await navigator.clipboard.writeText(copyText.value);
+            btn.innerText = "COPIED!";
+            btn.style.background = "#6aaa64";
+        } catch (err) {
+            fallbackCopy(copyText, btn);
+        }
+    } else {
+        fallbackCopy(copyText, btn);
+    }
+}
+
+function fallbackCopy(textEl, btn) {
+    textEl.select();
+    textEl.setSelectionRange(0, 99999); // For mobile
+    document.execCommand("copy");
+    btn.innerText = "COPIED!";
+    btn.style.background = "#6aaa64";
+}
 
     function initGrid() {
         const g = document.getElementById('grid');
@@ -234,3 +270,4 @@
 </body>
 
 </html>
+
